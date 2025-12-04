@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>BudgetBuddy – Transactions</title>
+
+    <!-- Shared stylesheet so this page matches the dashboard + auth pages -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="app-shell">
+
+    <!-- Sidebar navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-title">BudgetBuddy</div>
+        <a th:href="@{/}" class="nav-link">Dashboard</a>
+        <a th:href="@{/transactions}" class="nav-link active">Transactions</a>
+    </aside>
+
+    <!-- Main content for the transactions page -->
+    <main class="main">
+
+        <!-- Page heading + short description -->
+        <div class="page-title">Transactions</div>
+        <div class="page-subtitle">Review and manage all activity</div>
+
+        <!-- ===== Mini summary cards just for this view ===== -->
+        <!-- I reuse the totals so users can still see big picture while they filter. -->
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-label">Total Income</div>
+                <div class="card-value income"
+                     th:text="${#numbers.formatCurrency(totalIncome)}">$0</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Total Expenses</div>
+                <div class="card-value expense"
+                     th:text="${#numbers.formatCurrency(totalExpenses)}">$0</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Balance</div>
+                <div class="card-value balance"
+                     th:text="${#numbers.formatCurrency(totalBalance)}">$0</div>
+            </div>
+        </div>
+
+        <!-- ===== Table wrapper for filters + main table ===== -->
+        <div class="table-wrapper">
+            <div class="table-header">
+
+                <!-- Filter form to switch between ALL / INCOME / EXPENSE -->
+                <!-- When the user changes the dropdown, I auto-submit the form (GET). -->
+                <form th:action="@{/transactions}" method="get" class="filter-form">
+                    <span class="filter-label">Filter:</span>
+                    <select name="type" class="filter-select" onchange="this.form.submit()">
+                        <option value="ALL"
+                                th:selected="${selectedType == 'ALL'}">All</option>
+                        <option value="INCOME"
+                                th:selected="${selectedType == 'INCOME'}">Income</option>
+                        <option value="EXPENSE"
+                                th:selected="${selectedType == 'EXPENSE'}">Expense</option>
+                    </select>
+                </form>
+
+                <!-- Shortcut button to add a new transaction -->
+                <a th:href="@{/transactions/new}" class="btn-primary">+ Add Transaction</a>
+            </div>
+
+            <!-- ================= TRANSACTIONS TABLE ================= -->
+            <table>
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th style="text-align:right;">Amount</th>
+                    <th></th> <!-- actions column -->
+                </tr>
+                </thead>
+                <tbody>
+
+                <!-- Loop through the list of transactions from the controller -->
+                <tr th:each="t : ${transactions}">
+                    <!-- Basic text fields -->
+                    <td th:text="${t.name}">Rent</td>
+
+                    <!-- Type badge with different style for INCOME vs EXPENSE -->
+                    <td>
+                        <span th:class="'badge ' + (${t.type}=='INCOME'?'badge-income':'badge-expense')"
+                              th:text="${t.type}">INCOME</span>
+                    </td>
+
+                    <!-- Category badge – I reuse the category to style the pill in CSS -->
+                    <td>
+                        <span th:class="'badge badge-' + ${#strings.toLowerCase(t.category)}"
+                              th:text="${t.category}">Bills</span>
+                    </td>
+
+                    <!-- Date and formatted amount -->
+                    <td th:text="${t.date}">2025-12-03</td>
+                    <td style="text-align:right;"
+                        th:text="${#numbers.formatCurrency(t.amount)}">$0.00</td>
+
+                    <!-- Edit + Delete actions for each row -->
+                    <td>
+                        <!-- Edit button sends them to the transaction form with an id -->
+                        <a th:href="@{'/transactions/' + ${t.id} + '/edit'}"
+                           class="btn-secondary">Edit</a>
+
+                        <!-- Delete uses a POST form to avoid deleting via plain link -->
+                        <form th:action="@{'/transactions/' + ${t.id} + '/delete'}"
+                              method="post" style="display:inline;">
+                            <button type="submit" class="btn-secondary">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+
+                <!-- Empty state when there’s no data -->
+                <tr th:if="${#lists.isEmpty(transactions)}">
+                    <td colspan="6">No transactions yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>
+

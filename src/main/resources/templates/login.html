@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>BudgetBuddy – Login</title>
+
+    <!-- Main shared stylesheet for the app (same vibes as dashboard) -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="auth-page">
+
+<!-- Centered login card -->
+<div class="auth-card">
+
+    <!-- Simple text logo at the top -->
+    <div class="auth-logo">BudgetBuddy</div>
+
+    <!-- Main title + small line explaining the page -->
+    <h1 class="auth-title">Welcome back 👋</h1>
+    <p class="auth-subtitle">Log in to see your Budget Dashboard.</p>
+
+    <!-- Success message (shown after registration) -->
+    <!-- I’m using a flash attribute called "message" from the controller. -->
+    <div th:if="${message}"
+         class="auth-alert success"
+         th:text="${message}">
+        Account created!
+    </div>
+
+    <!-- Error message (shown when login fails) -->
+    <!-- This comes from the RedirectAttributes "error" in AuthController. -->
+    <div th:if="${error}"
+         class="auth-alert error"
+         th:text="${error}">
+        Invalid login
+    </div>
+
+    <!-- ================= LOGIN FORM ================= -->
+    <!-- Standard POST form that hits my /login endpoint in AuthController. -->
+    <form th:action="@{/login}" method="post" class="auth-form">
+
+        <!-- Email input -->
+        <label class="auth-label">Email</label>
+        <input class="auth-input"
+               type="email"
+               name="email"
+               required>
+
+        <!-- Password input -->
+        <label class="auth-label">Password</label>
+        <input class="auth-input"
+               type="password"
+               name="password"
+               required>
+
+        <!-- Submit button -->
+        <button type="submit" class="auth-button">Log in</button>
+    </form>
+
+    <!-- Link to take the user to the registration page if they don’t have an account yet -->
+    <p class="auth-footer">
+        New here?
+        <a th:href="@{/register}">Create an account</a>
+    </p>
+</div>
+</body>
+</html>
+

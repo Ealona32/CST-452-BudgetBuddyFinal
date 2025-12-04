@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>BudgetBuddy – Dashboard</title>
+
+    <!-- Main stylesheet for the whole app -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <!-- Chart.js for my donut + line charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+<div class="app-shell">
+
+    <!-- ================= SIDEBAR ================= -->
+    <!-- Left side menu with app name + navigation links -->
+    <aside class="sidebar">
+        <div class="sidebar-title">BudgetBuddy</div>
+        <a th:href="@{/}" class="nav-link active">Dashboard</a>
+        <a th:href="@{/transactions}" class="nav-link">Transactions</a>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main">
+
+        <!-- ===== Header with welcome + quick actions ===== -->
+        <div class="page-header">
+            <div>
+                <div class="page-title">Budget Dashboard</div>
+
+                <!-- Small subtitle that shows “Welcome, [name]” if the user is logged in -->
+                <div class="page-subtitle">
+                    <span th:if="${session.userName != null}">
+                        Welcome, <span th:text="${session.userName}">Ealona</span> —
+                    </span>
+                    Overview of your current activity
+                </div>
+            </div>
+
+            <!-- Right side buttons: add transaction + logout -->
+            <div class="page-header-actions">
+                <a th:href="@{/transactions}" class="btn-primary">+ Add Transaction</a>
+                <a th:href="@{/logout}" class="btn-secondary">Logout</a>
+            </div>
+        </div>
+
+        <!-- ===== NYC-inspired gradient strip (aesthetic header stripe) ===== -->
+        <div class="nyc-strip">
+            <div>
+                <div class="nyc-strip-title">NYC Cash Flow</div>
+
+                <!-- Shows the current month plus a little description -->
+                <div class="nyc-strip-subtitle"
+                     th:text="${monthLabel} + ' – Complete view of your budget'">
+                    December 2025 – Complete view of your budget
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SUMMARY CARDS ================= -->
+        <!-- High-level totals for income, expenses, balance, and savings rate -->
+        <div class="card-grid">
+
+            <!-- Total Income card -->
+            <div class="card">
+                <div class="card-label">Total Income</div>
+                <div class="card-value income"
+                     th:text="${#numbers.formatCurrency(income)}">$0</div>
+            </div>
+
+            <!-- Total Expenses card -->
+            <div class="card">
+                <div class="card-label">Total Expenses</div>
+                <div class="card-value expense"
+                     th:text="${#numbers.formatCurrency(expenses)}">$0</div>
+            </div>
+
+            <!-- Balance card (income – expenses) -->
+            <div class="card">
+                <div class="card-label">Balance</div>
+                <div class="card-value balance"
+                     th:text="${#numbers.formatCurrency(balance)}">$0</div>
+            </div>
+
+            <!-- Savings rate card (percentage of income I’m keeping) -->
+            <div class="card">
+                <div class="card-label">Savings Rate</div>
+
+                <!-- If I actually have income, show the percentage -->
+                <div class="card-value savings"
+                     th:if="${income > 0}"
+                     th:text="${#numbers.formatDecimal((balance / income) * 100, 0, 0)} + '%'">0%
+                </div>
+
+                <!-- If income is zero, I just show dashes instead of dividing by 0 -->
+                <div class="card-value savings" th:unless="${income > 0}">
+                    --
+                </div>
+
+                <!-- Little message under the savings rate to give context -->
+                <div class="card-subtext"
+                     th:if="${income > 0}"
+                     th:text="${balance >= 0} ?
+                              'You’re earning more than you spend this month.' :
+                              'You’re spending more than you earn this month.'">
+                    You’re earning more than you spend this month.
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= CHARTS SECTION ================= -->
+        <div class="chart-grid">
+
+            <!-- ===== Doughnut chart: spending by category this month ===== -->
+            <div class="chart-card">
+                <div class="chart-title">Spending by Category (This Month)</div>
+
+                <!-- Empty state if there are no expenses yet -->
+                <div th:if="${#lists.isEmpty(topCategories)}" class="chart-empty">
+                    No expenses this month yet — add an expense to see your spending breakdown.
+                </div>
+
+                <!-- Actual canvas for the chart (only shown if we have data) -->
+                <canvas id="categoryChart" width="600" height="280"
+                        th:if="${!#lists.isEmpty(topCategories)}"></canvas>
+
+            </div>
+
+            <!-- ===== Line chart: recent cash flow (cumulative) ===== -->
+            <div class="chart-card">
+                <div class="chart-title">Recent Cash Flow</div>
+                <canvas id="cashflowChart" width="600" height="280"></canvas>
+            </div>
+
+        </div>
+
+        <!-- ================= RECENT TRANSACTIONS TABLE ================= -->
+        <div class="table-wrapper">
+            <div class="table-header">
+                <div class="page-subtitle" style="margin-bottom:0">Recent Transactions</div>
+                <a th:href="@{/transactions}" class="btn-secondary">View all</a>
+            </div>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th style="text-align:right;">Amount</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <!-- Loop through the recent transactions list from the controller -->
+                <tr th:each="t : ${recent}">
+                    <td th:text="${t.name}">Paycheck</td>
+
+                    <!-- Type badge – colors are different for INCOME vs EXPENSE -->
+                    <td>
+                        <span th:class="'badge ' + (${t.type}=='INCOME' ? 'badge-income' : 'badge-expense')"
+                              th:text="${t.type}">INCOME</span>
+                    </td>
+
+                    <!-- Category badge – I use the category name in the CSS class -->
+                    <td>
+                        <span th:class="'badge badge-' + ${#strings.toLowerCase(t.category)}"
+                              th:text="${t.category}">Food</span>
+                    </td>
+
+                    <!-- Date and formatted amount -->
+                    <td th:text="${t.date}">2025-12-03</td>
+                    <td style="text-align:right;"
+                        th:text="${#numbers.formatCurrency(t.amount)}">$0.00</td>
+                </tr>
+
+                <!-- Empty state when there are no transactions yet -->
+                <tr th:if="${#lists.isEmpty(recent)}">
+                    <td colspan="5">No transactions yet.</td>
+                </tr>
+                </tbody>
+
+            </table>
+        </div>
+
+        <!-- ================= TOP CATEGORIES TABLE ================= -->
+        <div class="table-wrapper" style="margin-top:18px;">
+            <div class="table-header">
+                <div class="page-subtitle" style="margin-bottom:0">
+                    Top Spending Categories (This Month)
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>Category</th>
+                    <th style="text-align:right;">Total Spent</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <!-- Loop through the CategoryTotal objects from the service -->
+                <tr th:each="c : ${topCategories}">
+                    <td th:text="${c.category}">Food</td>
+                    <td style="text-align:right;"
+                        th:text="${#numbers.formatCurrency(c.total)}">$0.00</td>
+                </tr>
+
+                <!-- Empty state when there are no category totals -->
+                <tr th:if="${#lists.isEmpty(topCategories)}">
+                    <td colspan="2">No expenses yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+</div>
+
+<!-- ===================== CHART JS SCRIPTS ===================== -->
+<script th:inline="javascript">
+/*<![CDATA[*/
+
+    // Grab the server-side data lists and inject them into JS
+    const categoryData = /*[[${topCategories}]]*/ [];
+    const recentData   = /*[[${recent}]]*/ [];
+
+    /* ------------------ CATEGORY DOUGHNUT ------------------ */
+    // Build labels and values for the doughnut chart.
+    const catLabels = categoryData.map(c => c.category);
+    const catTotals = categoryData.map(c => c.total);
+
+    const categoryCtx = document.getElementById('categoryChart');
+
+    // Only create the chart if we actually have data and the canvas exists.
+    if (categoryCtx && catLabels.length > 0) {
+        new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catTotals,
+                    backgroundColor: [
+                        '#FF8A00', '#22C55E', '#3B82F6',
+                        '#E11D48', '#A855F7', '#FACC15'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 14, color: '#5a4f46' }
+                    }
+                },
+                cutout: '65%' // gives it that donut look instead of a full pie
+            }
+        });
+    }
+
+
+    /* ------------------ CASHFLOW LINE CHART ------------------ */
+
+    // For the cashflow chart, I use the recent transactions.
+    const txLabels = recentData.map(t => t.date);
+    const txAmounts = recentData.map(t => t.amount);
+
+    // Build a simple cumulative balance line so it feels like a “story” of the last few transactions.
+    let cumulative = [];
+    let running = 0;
+    txAmounts.forEach(a => {
+        running += a;
+        cumulative.push(running);
+    });
+
+    const cashCtx = document.getElementById('cashflowChart');
+
+    if (cashCtx && txLabels.length > 0) {
+        const ctx = cashCtx.getContext('2d');
+
+        // Soft gradient for the line chart to keep the aesthetic.
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(255,140,0,1)');
+        gradient.addColorStop(1, 'rgba(255,200,150,0.4)');
+
+        new Chart(cashCtx, {
+            type: 'line',
+            data: {
+                labels: txLabels,
+                datasets: [{
+                    label: 'Cumulative Balance',
+                    data: cumulative,
+                    borderColor: gradient,
+                    backgroundColor: 'rgba(255,140,0,0.07)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#ff8a00',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#3d2f28',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        padding: 12,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#6e625c', font: { size: 12 } },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: '#6e625c', font: { size: 12 } },
+                        grid: { color: 'rgba(200,180,160,0.25)' }
+                    }
+                }
+            }
+        });
+    }
+
+/*]]>*/
+</script>
+
+</body>
+</html>

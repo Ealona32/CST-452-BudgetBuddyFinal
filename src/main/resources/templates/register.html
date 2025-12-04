@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>BudgetBuddy – Register</title>
+
+    <!-- Shared stylesheet so the register page matches the rest of the app -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="auth-page">
+
+<!-- Centered auth card just like the login page -->
+<div class="auth-card">
+
+    <!-- Simple text logo at the top -->
+    <div class="auth-logo">BudgetBuddy</div>
+
+    <!-- Main title + little description line -->
+    <h1 class="auth-title">Create your account ✨</h1>
+    <p class="auth-subtitle">Sign up once and we’ll remember your budgets.</p>
+
+    <!-- ================= REGISTER FORM ================= -->
+    <!-- This form posts to my /register endpoint in AuthController. -->
+    <form th:action="@{/register}" method="post" class="auth-form">
+
+        <!-- Name input – this is the display name I use in the UI (Welcome, [name]) -->
+        <label class="auth-label">Name</label>
+        <input class="auth-input"
+               type="text"
+               name="name"
+               value="Ealona"
+               required>
+
+        <!-- Email – this will be the unique identifier for login -->
+        <label class="auth-label">Email</label>
+        <input class="auth-input"
+               type="email"
+               name="email"
+               required>
+
+        <!-- Password field – stored in the users table (simple version for this project) -->
+        <label class="auth-label">Password</label>
+        <input class="auth-input"
+               type="password"
+               name="password"
+               required>
+
+        <!-- Submit button to create the new account -->
+        <button type="submit" class="auth-button">Sign up</button>
+    </form>
+
+    <!-- Link back to login if they already have an account -->
+    <p class="auth-footer">
+        Already have an account?
+        <a th:href="@{/login}">Log in</a>
+    </p>
+</div>
+
+</body>
+</html>
